@@ -1,4 +1,11 @@
+import 'package:logger/logger.dart';
+
 import 'package:flutter/material.dart';
+import 'package:connectrpc/http2.dart';
+import 'package:connectrpc/protobuf.dart';
+import 'package:connectrpc/protocol/connect.dart' as protocol;
+import 'package:test_connectrpc_over_quic/gen/http3test/v1/test_service.connect.client.dart';
+import 'package:test_connectrpc_over_quic/gen/http3test/v1/test_api.pb.dart';
 
 void main() {
   runApp(const MyApp());
@@ -55,6 +62,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
+  String _response = '';
 
   void _incrementCounter() {
     setState(() {
@@ -65,6 +73,26 @@ class _MyHomePageState extends State<MyHomePage> {
       // called again, and so nothing would appear to happen.
       _counter++;
     });
+    _testConnectRpc();
+  }
+
+  void _testConnectRpc() async {
+    final transport = protocol.Transport(
+      baseUrl: "https://127.0.0.1:6661",
+      codec: const ProtoCodec(),
+      httpClient: createHttpClient(),
+    );
+
+    final client = TestServiceClient(transport);
+    try {
+      final response = await client.testApi(TestApiRequest(name: 'test'));
+      setState(() {
+        _response = response.message;
+      });
+      Logger().d(response.message);
+    } catch (e) {
+      Logger().e(e);
+    }
   }
 
   @override
@@ -109,6 +137,7 @@ class _MyHomePageState extends State<MyHomePage> {
               '$_counter',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
+            Text(_response),
           ],
         ),
       ),
